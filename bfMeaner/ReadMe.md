@@ -25,3 +25,10 @@ Usage: bfMeanEr [-p| --prefix arg] [--(no-)pdb] [-r| --ref arg] [--(no-)xvg] [-h
 	-h, --help: Prints help
 		
 	-I, --include: Directory for temporary folders (default array elements: '/tmp')
+
+---
+### Installation
+
+- Just copy to your `PATH` and make it executable (`chmod +x bfMeanEr`)
+- Template is made for `argbash` https://github.com/matejak/argbash
+> argbash bfMeanEr_template -o bfMeanEr
