@@ -24,9 +24,7 @@ parser = argparse.ArgumentParser(
 '''))
 
 parser.add_argument("-i", "--Inputfiles", nargs='+', required=True, help='Specify input filenames in csv format!')
-parser.add_argument("-o", "--Outputfile", default="Output.dat", help='Optional: Specify output filename')
-
-parser.add_argument("-sr", "--skiprows", default=18, help='Specificy how many rows to skip from the beginning. Useful if inputfile contains different number of header rows; defulat is 18')
+parser.add_argument("-o", "--Outputfile", default="MeanErrOutput.dat", help='Optional: Specify output filename')
 
 parser.add_argument("-isep", "--inputseperator", default=" ", help='Optional: Choose seperator (tab, space, comma, dot, minus); default is a space')
 
@@ -59,15 +57,27 @@ elif args.outputseperator == "minus":
     args.outputseperator = "-"
 else:
     args.outputseperator = args.outputseperator
-        
-with open(args.Inputfiles[0], 'r') as f:     
-        data = pd.read_csv(f, sep=args.inputseperator, skipinitialspace = True, skiprows=args.skiprows, names = ['x','y'])
-        datax = data['x']
-        dataxy = datax
 
+# calculates rows to skip
+hashlines = ""
+atlines = ""
+with open(args.Inputfiles[0], 'r') as f:     
+        header = f.readlines()
+        for i in header:
+            if i.startswith('#'):
+                hashlines += str(1)
+            elif i.startswith('@'):
+                atlines += str(1)
+        skiprows = len(hashlines) + len(atlines)        
+
+with open(args.Inputfiles[0], 'r') as f:     
+        data = pd.read_csv(f, sep=args.inputseperator, skipinitialspace = True, skiprows=skiprows, names = ['@TYPE xydy','y'])
+        datax = data['@TYPE xydy']
+        dataxy = datax
+            
 for filename in enumerate(args.Inputfiles):
     with open(filename[1], 'r') as f:     
-        data = pd.read_csv(f, sep=args.inputseperator, skipinitialspace = True, skiprows=args.skiprows, names = ['x','y'])
+        data = pd.read_csv(f, sep=args.inputseperator, skipinitialspace = True, skiprows=skiprows, names = ['@TYPE xydy','y'])
         num = filename[0] + 1
         datay = data['y']
         dataxy = pd.concat([dataxy, datay], axis=1)
@@ -75,15 +85,28 @@ for filename in enumerate(args.Inputfiles):
 dataMean = dataxy['y'].mean(axis=1)
 datastd = dataxy['y'].std(axis=1)
 
-meanErr = pd.concat([datax, dataMean, datastd], keys = ['x', 'Average', 'StDev'], axis=1)
-  
+meanErr = pd.concat([datax, dataMean, datastd], keys = ['@TYPE xydy', 'Average', 'StDev'], axis=1)
 meanErr.to_csv(args.Outputfile, sep=args.outputseperator, index=False)
-print("+--------------------------------------------+")
+
+footerlines = "# xmgrace settings:\n"
+with open(args.Inputfiles[0], 'r') as f:     
+        header = f.readlines()
+        for i in header:
+            if i.startswith('@'):
+                footerlines += i
+
+footerlines = footerlines.replace("@TYPE xy", "")
+ff = open(args.Outputfile, "a")
+ff.write(footerlines)
+
+
+print("+--------------------------------------------------+")
 print("                 dataMeanErr")
-print("+--------------------------------------------+")
+print("+--------------------------------------------------+")
+print("   Skipped the first " + str(skiprows) + " rows starting with # or @")
 print("   Calculated average and stdev of " + str(num) + " files.")
 print("   Output saved to " + args.Outputfile)
-print("+--------------------------------------------+")
+print("+--------------------------------------------------+")
     
     
     
